@@ -4,13 +4,13 @@ namespace Acme\ExpensesBundle;
 
 use Symfony\Component\EventDispatcher\Event;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
-use Acme\ExpensesBundle\Twig\Extension\DemoExtension;
+use Acme\ExpensesBundle\Twig\Extension\ExpensesExtension;
 
 class ControllerListener
 {
     protected $extension;
 
-    public function __construct(DemoExtension $extension)
+    public function __construct(ExpensesExtension $extension)
     {
         $this->extension = $extension;
     }

@@ -5,7 +5,7 @@ namespace Acme\ExpensesBundle\Twig\Extension;
 use Symfony\Component\HttpKernel\KernelInterface;
 use Symfony\Bundle\TwigBundle\Loader\FilesystemLoader;
 
-class DemoExtension extends \Twig_Extension
+class ExpensesExtension extends \Twig_Extension
 {
     protected $loader;
     protected $controller;

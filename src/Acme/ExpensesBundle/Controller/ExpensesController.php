@@ -6,7 +6,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Acme\ExpensesBundle\Form\ContactForm;
 
-class DemoController extends Controller
+class ExpensesController extends Controller
 {
     /**
      * @extra:Route("/demo", name="_demo")

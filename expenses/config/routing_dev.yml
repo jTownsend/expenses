@@ -6,6 +6,11 @@ _demo:
     type:     annotation
     prefix:   /_demo
 
+_demo_contact:
+    resource: "@AcmeExpensesBundle/Controller/DemoController.php"
+    type:     annotation
+    prefix:   ~
+
 _assetic:
     resource: .
     type:     assetic

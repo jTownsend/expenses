@@ -1,6 +1,6 @@
 <?php
 
-namespace Acme\DemoBundle\Form;
+namespace Acme\ExpensesBundle\Form;
 
 use Symfony\Component\Form\Form;
 use Symfony\Component\Form\TextField;

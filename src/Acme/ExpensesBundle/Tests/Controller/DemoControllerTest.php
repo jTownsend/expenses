@@ -1,10 +1,10 @@
 <?php
 
-namespace Acme\DemoBundle\Tests\Controller;
+namespace Acme\ExpensesBundle\Tests\Controller;
 
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
-class DemoControllerTest extends WebTestCase
+class ExpensesControllerTest extends WebTestCase
 {
     public function testIndex()
     {
