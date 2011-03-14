@@ -4,7 +4,7 @@ namespace Acme\ExpensesBundle\Controller;
 
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Symfony\Component\HttpFoundation\RedirectResponse;
-use Acme\ExpensesBundle\Form\ContactForm;
+use Acme\ExpensesBundle\Form\ListEntryForm;
 
 class ExpensesController extends Controller
 {
@@ -27,20 +27,19 @@ class ExpensesController extends Controller
     }
 
     /**
-     * @extra:Route("/contact", name="_demo_contact")
+     * @extra:Route("/entry", name="_entry")
      * @extra:Template()
      */
-    public function contactAction()
+    public function entryAction()
     {
-        $form = ContactForm::create($this->get('form.context'), 'contact');
+        $form = ListEntryForm::create($this->get('form.context'), 'entry');
 
         $form->bind($this->container->get('request'), $form);
-        if ($form->isValid()) {
-            $form->send($this->get('mailer'));
+        if ($form->isValid())
+        {
+            $this->get('session')->setFlash('notice', 'Entry saved!');
 
-            $this->get('session')->setFlash('notice', 'Message sent!');
-
-            return new RedirectResponse($this->generateUrl('_demo'));
+            return new RedirectResponse($this->generateUrl('_entry'));
         }
 
         return array('form' => $form);

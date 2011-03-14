@@ -1,0 +1,30 @@
+{% extends "AcmeExpensesBundle::layout.html.twig" %}
+
+{% block title %}Expense Tracker - Entry{% endblock %}
+
+{% block content %}
+    <form action="" method="POST">
+        {{ form_errors(form) }}
+        <table>
+        {% for field in form %}
+            {% if not field.ishidden %}
+            <tr>
+                <td>
+                    {{ form_label(field) }}
+                </td>
+                <td>
+                    {{ form_field(field) }}
+                    {{ form_errors(field) }}
+                </td>
+            </tr>
+            {% endif %}
+        {% endfor %}
+            <tr>
+                <td>
+                    <input type="submit" value="Send" />
+                    {{ form_hidden(form) }}
+                </td>
+            </tr>
+        </table>
+    </form>
+{% endblock %}

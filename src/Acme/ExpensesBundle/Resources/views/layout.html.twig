@@ -7,9 +7,11 @@
         <link rel="shortcut icon" href="{{ asset('favicon.ico') }}" />
     </head>
     <body>
-        <div id="wrapper">
-            <h1>Expense Tracker</h1>
-            <div class="content">
+        <div id="wrapper" class="cen">
+            <div id="header" class="cen">
+                <h1>Expense Tracker</h1>
+            </div>
+            <div class="content cen">
                 {% block content %}
                 {% endblock %}
             </div>

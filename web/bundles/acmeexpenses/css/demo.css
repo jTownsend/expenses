@@ -50,7 +50,7 @@ h1, h2, h3
 
 h1
 {
-    font-size:      45px;
+    font-size:      35px;
     padding-bottom: 30px;
 }
 
@@ -259,4 +259,24 @@ input[type=text]
     margin: 5px;
     margin-top: 15px;
     background-color: #ffe;
+}
+
+.cen
+{
+    margin:0 auto;
+}
+
+#wrapper
+{
+    width:1000px;
+}
+
+#wrapper > div
+{
+    width:260px;
+}
+
+table tr td
+{
+    padding:5px;
 }

@@ -26,3 +26,8 @@ _profiler:
 _configurator:
     resource: "@SymfonyWebConfiguratorBundle/Resources/config/routing/configurator.xml"
     prefix:   /_configurator
+
+_entry:
+    resource: "@AcmeExpensesBundle/Controller/ExpensesController.php"
+    type:     annotation
+    prefix:   ~
