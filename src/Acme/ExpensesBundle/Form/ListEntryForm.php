@@ -4,7 +4,7 @@ namespace Acme\ExpensesBundle\Form;
 
 use Symfony\Component\Form\Form;
 use Symfony\Component\Form\TextField;
-use Symfony\Component\Form\MoneyField;
+use Symfony\Component\Form\IntegerField;
 
 class ListEntryForm extends Form
 {
@@ -29,6 +29,6 @@ class ListEntryForm extends Form
     {
         $this->add(new TextField('itemName'));
         $this->add(new TextField('itemCost'));
-        $this->add(new TextField('itemQuantity'));
+        $this->add(new IntegerField('itemQuantity'));
     }
 }

@@ -151,7 +151,7 @@ ul li
     display: none;
 }
 
-input[type=text]
+input[type=text], input[type=number]
 {
     border:      1px solid #DADADA;
     background:  white url(../images/field-background.gif) repeat-x left top;
@@ -279,4 +279,19 @@ input[type=text]
 table tr td
 {
     padding:5px;
+}
+
+.btn
+{
+    -moz-border-radius: 1px 62px 59px 62px;
+    -moz-box-shadow: 2px 2px black;
+    background-color: threeddarkshadow;
+    border: none;
+    color: white;
+    cursor: pointer;
+    font-family: arial;
+    font-size: 20px;
+    font-weight: bold;
+    height: 27px;
+    width: 65px;
 }
