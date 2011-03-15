@@ -1,15 +1,15 @@
 [submodule "vendor/symfony"]
 	path = vendor/symfony
-	url = https://github.com/symfony/symfony.git
+	url = git://github.com/symfony/symfony.git
 [submodule "vendor/assetic"]
 	path = vendor/assetic
-	url = https://github.com/kriswallsmith/assetic.git
+	url = git://github.com/kriswallsmith/assetic.git
 [submodule "vendor/Twig"]
 	path = vendor/Twig
-	url = https://github.com/fabpot/Twig.git
+	url = git://github.com/fabpot/Twig.git
 [submodule "vendor/Twig-extensions"]
 	path = vendor/Twig-extensions
-	url = https://github.com/fabpot/Twig-extensions.git
+	url = git://github.com/fabpot/Twig-extensions.git
 [submodule "vendor/doctrine"]
 	path = vendor/doctrine
 	url = git://github.com/doctrine/doctrine2.git
