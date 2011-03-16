@@ -12,6 +12,11 @@ framework:
     templating:    { engines: ['twig'] } #assets_version: SomeVersionScheme
     session:
         default_locale: %locale%
+        storage_id:     pdo
+        db_table:       sessions
+        db_id_col:      id
+        db_data_col:    data
+        db_time_col:    last_updated
         lifetime:       3600
         auto_start:     true
 
@@ -39,6 +44,31 @@ doctrine:
         auto_generate_proxy_classes: %kernel.debug%
         mappings:
             AcmeExpensesBundle: ~
+
+security:
+    providers:
+        # fos_userbundle:
+            # id: fos_user.user_manager
+        main:
+            users:
+                foo: { password: testing, roles: ROLE_USER }
+                admin: { password: admin, roles: ROLE_ADMIN }
+    factories:
+        FunsationalCASFactory: %kernel.root_dir%/../src/Funsational/CASBundle/Resources/config/security_factories.xml
+    firewalls:
+        profiler:
+            pattern: /_profiler/.*
+        wdt:
+            pattern: /_wdt/.*
+        main:
+            pattern: /.*
+            cas:
+                default_domain: sync.expensetracker.com
+            form_login:
+                use_forward: false
+                provider: main
+                use_forward: false
+            logout: true
 
 # Swiftmailer Configuration
 #swiftmailer:

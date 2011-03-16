@@ -13,6 +13,7 @@ class AppKernel extends Kernel
             new Symfony\Bundle\ZendBundle\ZendBundle(),
             new Symfony\Bundle\DoctrineBundle\DoctrineBundle(),
             new Symfony\Bundle\AsseticBundle\AsseticBundle(),
+            new Symfony\Bundle\SecurityBundle\SecurityBundle(),
             new Sensio\Bundle\FrameworkExtraBundle\SensioFrameworkExtraBundle(),
         );
 
@@ -20,6 +21,7 @@ class AppKernel extends Kernel
             $bundles[] = new Symfony\Bundle\WebProfilerBundle\WebProfilerBundle();
             $bundles[] = new Symfony\Bundle\WebConfiguratorBundle\SymfonyWebConfiguratorBundle();
             $bundles[] = new Acme\ExpensesBundle\AcmeExpensesBundle();
+            $bundles[] = new Funsational\CASBundle\FunsationalCASBundle();
         }
 
         return $bundles;

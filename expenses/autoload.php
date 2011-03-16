@@ -16,6 +16,7 @@ $loader->registerNamespaces(array(
     'Zend\\Log'                      => __DIR__.'/../vendor/zend-log',
     'Assetic'                        => __DIR__.'/../vendor/assetic/src',
     'Acme'                           => __DIR__.'/../src',
+    'Funsational'                    => __DIR__.'/../src'
 ));
 $loader->registerPrefixes(array(
     'Twig_Extensions_' => __DIR__.'/../vendor/twig-extensions/lib',

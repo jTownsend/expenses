@@ -31,6 +31,9 @@
 [submodule "vendor/doctrine-mongodb-odm"]
 	path = vendor/doctrine-mongodb-odm
 	url = git://github.com/doctrine/mongodb-odm.git
-[submodule "vendor/zend-log/Zend/Log"]
-	path = vendor/zend-log/Zend/Log
+[submodule "vendor/zend-log"]
+	path = vendor/zend-log
 	url = git://github.com/symfony/zend-log.git
+[submodule "src/Funsational/CASBundle"]
+	path = src/Funsational/CASBundle
+	url = git@git.assembla.com:funsational-development.git

@@ -29,6 +29,6 @@ class ListEntryForm extends Form
     {
         $this->add(new TextField('itemName'));
         $this->add(new TextField('itemCost'));
-        $this->add(new IntegerField('itemQuantity'));
+        $this->add(new TextField('itemQuantity'));
     }
 }
