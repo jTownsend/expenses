@@ -37,3 +37,6 @@
 [submodule "src/Funsational/CASBundle"]
 	path = src/Funsational/CASBundle
 	url = git@git.assembla.com:funsational-development.git
+[submodule "vendor/monolog"]
+	path = vendor/monolog
+	url = git://github.com/Seldaek/monolog.git
