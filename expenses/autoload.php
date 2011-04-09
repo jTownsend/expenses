@@ -13,16 +13,17 @@ $loader->registerNamespaces(array(
     'Doctrine\\ODM\\MongoDB'         => __DIR__.'/../vendor/doctrine-mongodb-odm/lib',
     'Doctrine\\DBAL'                 => __DIR__.'/../vendor/doctrine-dbal/lib',
     'Doctrine'                       => __DIR__.'/../vendor/doctrine/lib',
-    'Zend\\Log'                      => __DIR__.'/../vendor/zend-log',
+    'Monolog'                        => __DIR__.'/../vendor/monolog/src',
+    'JMS'                            => __DIR__.'/../vendor/bundles',
     'Assetic'                        => __DIR__.'/../vendor/assetic/src',
-    'Acme'                           => __DIR__.'/../src',
-    'Funsational'                    => __DIR__.'/../src'
+    'Acme'                           => __DIR__.'/../src'
 ));
 $loader->registerPrefixes(array(
     'Twig_Extensions_' => __DIR__.'/../vendor/twig-extensions/lib',
     'Twig_'            => __DIR__.'/../vendor/twig/lib',
 ));
+$loader->register();
 $loader->registerPrefixFallback(array(
     __DIR__.'/../vendor/symfony/src/Symfony/Component/Locale/Resources/stubs',
 ));
-$loader->register();
+

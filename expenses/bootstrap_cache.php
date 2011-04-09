@@ -11,7 +11,6 @@ use Symfony\Component\HttpKernel\Bundle\BundleInterface;
 use Symfony\Component\Config\Loader\LoaderInterface;
 interface KernelInterface extends HttpKernelInterface, \Serializable
 {
-    function registerRootDir();
     function registerBundles();
     function registerContainerConfiguration(LoaderInterface $loader);
     function boot();
@@ -66,7 +65,7 @@ abstract class Kernel implements KernelInterface
         $this->environment = $environment;
         $this->debug = (Boolean) $debug;
         $this->booted = false;
-        $this->rootDir = realpath($this->registerRootDir());
+        $this->rootDir = $this->getRootDir();
         $this->name = preg_replace('/[^a-zA-Z0-9_]+/', '', basename($this->rootDir));
         if ($this->debug) {
             ini_set('display_errors', 1);
@@ -150,25 +149,36 @@ abstract class Kernel implements KernelInterface
             throw new \RuntimeException(sprintf('File name "%s" contains invalid characters (..).', $name));
         }
         $name = substr($name, 1);
-        list($bundle, $path) = explode('/', $name, 2);
-        $isResource = 0 === strpos($path, 'Resources');
+        list($bundleName, $path) = explode('/', $name, 2);
+        $isResource = 0 === strpos($path, 'Resources') && null !== $dir;
+        $overridePath = substr($path, 9);
+        $resourceBundle = null;
+        $bundles = $this->getBundle($bundleName, false);
         $files = array();
-        if (true === $isResource && null !== $dir && file_exists($file = $dir.'/'.$bundle.'/'.substr($path, 10))) {
-            if ($first) {
-                return $file;
-            }
-            $files[] = $file;
-        }
-        foreach ($this->getBundle($bundle, false) as $bundle) {
-            if (file_exists($file = $bundle->getPath().'/'.$path)) {
+        foreach ($bundles as $bundle) {
+            if ($isResource && file_exists($file = $dir.'/'.$bundle->getName().$overridePath)) {
+                if (null !== $resourceBundle) {
+                    throw new \RuntimeException(sprintf('"%s" resource is hidden by a resource from the "%s" derived bundle. Create a "%s" file to override the bundle resource.',
+                        $file,
+                        $resourceBundle,
+                        $dir.'/'.$bundles[0]->getName().$overridePath
+                    ));
+                }
                 if ($first) {
                     return $file;
                 }
                 $files[] = $file;
             }
+            if (file_exists($file = $bundle->getPath().'/'.$path)) {
+                if ($first && !$isResource) {
+                    return $file;
+                }
+                $files[] = $file;
+                $resourceBundle = $bundle->getName();
+            }
         }
-        if ($files) {
-            return $files;
+        if (count($files) > 0) {
+            return $first && $isResource ? $files[0] : $files;
         }
         throw new \InvalidArgumentException(sprintf('Unable to find file "@%s".', $name));
     }
@@ -186,6 +196,10 @@ abstract class Kernel implements KernelInterface
     }
     public function getRootDir()
     {
+        if (null === $this->rootDir) {
+            $r = new \ReflectionObject($this);
+            $this->rootDir = dirname($r->getFileName());
+        }
         return $this->rootDir;
     }
     public function getContainer()
@@ -219,6 +233,9 @@ abstract class Kernel implements KernelInterface
                 if (isset($directChildren[$parentName])) {
                     throw new \LogicException(sprintf('Bundle "%s" is directly extended by two bundles "%s" and "%s".', $parentName, $name, $directChildren[$parentName]));
                 }
+                if ($parentName == $name) {
+                    throw new \LogicException(sprintf('Bundle "%s" can not extend itself.', $name));
+                }
                 $directChildren[$parentName] = $name;
             } else {
                 $topMostBundles[$name] = $bundle;
@@ -242,20 +259,24 @@ abstract class Kernel implements KernelInterface
             }
         }
     }
+    protected function getContainerClass()
+    {
+        return $this->name.ucfirst($this->environment).($this->debug ? 'Debug' : '').'ProjectContainer';
+    }
     protected function initializeContainer()
     {
-        $class = $this->name.ucfirst($this->environment).($this->debug ? 'Debug' : '').'ProjectContainer';
-        $cache = new ConfigCache($this->getCacheDir(), $class, $this->debug);
-        $fresh = false;
+        $class = $this->getContainerClass();
+        $cache = new ConfigCache($this->getCacheDir().'/'.$class.'.php', $this->debug);
+        $fresh = true;
         if (!$cache->isFresh()) {
             $container = $this->buildContainer();
             $this->dumpContainer($cache, $container, $class);
-            $fresh = true;
+            $fresh = false;
         }
         require_once $cache;
         $this->container = new $class();
         $this->container->set('kernel', $this);
-        if ($fresh && 'cli' !== php_sapi_name()) {
+        if (!$fresh && 'cli' !== php_sapi_name()) {
             $this->container->get('cache_warmer')->warmUp($this->container->getParameter('kernel.cache_dir'));
         }
     }
@@ -267,14 +288,15 @@ abstract class Kernel implements KernelInterface
         }
         return array_merge(
             array(
-                'kernel.root_dir'    => $this->rootDir,
-                'kernel.environment' => $this->environment,
-                'kernel.debug'       => $this->debug,
-                'kernel.name'        => $this->name,
-                'kernel.cache_dir'   => $this->getCacheDir(),
-                'kernel.logs_dir'    => $this->getLogDir(),
-                'kernel.bundles'     => $bundles,
-                'kernel.charset'     => 'UTF-8',
+                'kernel.root_dir'        => $this->rootDir,
+                'kernel.environment'     => $this->environment,
+                'kernel.debug'           => $this->debug,
+                'kernel.name'            => $this->name,
+                'kernel.cache_dir'       => $this->getCacheDir(),
+                'kernel.logs_dir'        => $this->getLogDir(),
+                'kernel.bundles'         => $bundles,
+                'kernel.charset'         => 'UTF-8',
+                'kernel.container_class' => $this->getContainerClass(),
             ),
             $this->getEnvParameters()
         );
@@ -304,21 +326,21 @@ abstract class Kernel implements KernelInterface
         if (null !== $cont = $this->registerContainerConfiguration($this->getContainerLoader($container))) {
             $container->merge($cont);
         }
+        foreach (array('cache', 'logs') as $name) {
+            $dir = $container->getParameter(sprintf('kernel.%s_dir', $name));
+            if (!is_dir($dir)) {
+                if (false === @mkdir($dir, 0777, true)) {
+                    exit(sprintf("Unable to create the %s directory (%s)\n", $name, dirname($dir)));
+                }
+            } elseif (!is_writable($dir)) {
+                exit(sprintf("Unable to write in the %s directory (%s)\n", $name, $dir));
+            }
+        }
         $container->compile();
         return $container;
     }
     protected function dumpContainer(ConfigCache $cache, ContainerBuilder $container, $class)
     {
-        foreach (array('cache', 'logs') as $name) {
-            $dir = $container->getParameter(sprintf('kernel.%s_dir', $name));
-            if (!is_dir($dir)) {
-                if (false === @mkdir($dir, 0777, true)) {
-                    die(sprintf("Unable to create the %s directory (%s)\n", $name, dirname($dir)));
-                }
-            } elseif (!is_writable($dir)) {
-                die(sprintf("Unable to write in the %s directory (%s)\n", $name, $dir));
-            }
-        }
                 $dumper = new PhpDumper($container);
         $content = $dumper->dump(array('class' => $class));
         if (!$this->debug) {
@@ -328,12 +350,13 @@ abstract class Kernel implements KernelInterface
     }
     protected function getContainerLoader(ContainerInterface $container)
     {
+        $locator = new FileLocator($this);
         $resolver = new LoaderResolver(array(
-            new XmlFileLoader($container, new FileLocator($this)),
-            new YamlFileLoader($container, new FileLocator($this)),
-            new IniFileLoader($container, new FileLocator($this)),
-            new PhpFileLoader($container, new FileLocator($this)),
-            new ClosureLoader($container, new FileLocator($this)),
+            new XmlFileLoader($container, $locator),
+            new YamlFileLoader($container, $locator),
+            new IniFileLoader($container, $locator),
+            new PhpFileLoader($container, $locator),
+            new ClosureLoader($container, $locator),
         ));
         return new DelegatingLoader($resolver);
     }
@@ -381,12 +404,12 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 class HttpCache implements HttpKernelInterface
 {
-    protected $kernel;
-    protected $traces;
-    protected $store;
-    protected $request;
-    protected $esi;
-    protected $esiCacheStrategy;
+    private $kernel;
+    private $store;
+    private $request;
+    private $esi;
+    private $esiCacheStrategy;
+    private $traces;
     public function __construct(HttpKernelInterface $kernel, StoreInterface $store, Esi $esi = null, array $options = array())
     {
         $this->store = $store;
@@ -418,6 +441,14 @@ class HttpCache implements HttpKernelInterface
     public function getRequest()
     {
         return $this->request;
+    }
+    public function getKernel()
+    {
+        return $this->kernel;
+    }
+    public function getEsi()
+    {
+        return $this->esi;
     }
     public function handle(Request $request, $type = HttpKernelInterface::MASTER_REQUEST, $catch = true)
     {
@@ -623,7 +654,7 @@ class HttpCache implements HttpKernelInterface
         }
                 $this->store->unlock($request);
     }
-    protected function restoreResponseBody(Request $request, Response $response)
+    private function restoreResponseBody(Request $request, Response $response)
     {
         if ('head' === strtolower($request->getMethod())) {
             $response->setContent('');
@@ -656,7 +687,7 @@ class HttpCache implements HttpKernelInterface
             $this->esi->process($request, $response);
         }
     }
-    protected function isPrivateRequest(Request $request)
+    private function isPrivateRequest(Request $request)
     {
         foreach ($this->options['private_headers'] as $key) {
             $key = strtolower(str_replace('HTTP_', '', $key));
@@ -670,7 +701,7 @@ class HttpCache implements HttpKernelInterface
         }
         return false;
     }
-    protected function record(Request $request, $event)
+    private function record(Request $request, $event)
     {
         $path = $request->getPathInfo();
         if ($qs = $request->getQueryString()) {
@@ -703,9 +734,9 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\HeaderBag;
 class Store implements StoreInterface
 {
-    protected $root;
-    protected $keyCache;
-    protected $locks;
+    private $root;
+    private $keyCache;
+    private $locks;
     public function __construct($root)
     {
         $this->root = $root;
@@ -821,7 +852,7 @@ class Store implements StoreInterface
             }
         }
     }
-    protected function requestsMatch($vary, $env1, $env2)
+    private function requestsMatch($vary, $env1, $env2)
     {
         if (empty($vary)) {
             return true;
@@ -836,7 +867,7 @@ class Store implements StoreInterface
         }
         return true;
     }
-    protected function getMetadata($key)
+    private function getMetadata($key)
     {
         if (false === $entries = $this->load($key)) {
             return array();
@@ -851,12 +882,12 @@ class Store implements StoreInterface
         }
         return false;
     }
-    protected function load($key)
+    private function load($key)
     {
         $path = $this->getPath($key);
         return file_exists($path) ? file_get_contents($path) : false;
     }
-    protected function save($key, $data)
+    private function save($key, $data)
     {
         $path = $this->getPath($key);
         if (!is_dir(dirname($path)) && false === @mkdir(dirname($path), 0777, true)) {
@@ -880,24 +911,24 @@ class Store implements StoreInterface
     {
         return $this->root.DIRECTORY_SEPARATOR.substr($key, 0, 2).DIRECTORY_SEPARATOR.substr($key, 2, 2).DIRECTORY_SEPARATOR.substr($key, 4, 2).DIRECTORY_SEPARATOR.substr($key, 6);
     }
-    protected function getCacheKey(Request $request)
+    private function getCacheKey(Request $request)
     {
         if (isset($this->keyCache[$request])) {
             return $this->keyCache[$request];
         }
         return $this->keyCache[$request] = 'md'.sha1($request->getUri());
     }
-    protected function persistRequest(Request $request)
+    private function persistRequest(Request $request)
     {
         return $request->headers->all();
     }
-    protected function persistResponse(Response $response)
+    private function persistResponse(Response $response)
     {
         $headers = $response->headers->all();
         $headers['X-Status'] = array($response->getStatusCode());
         return $headers;
     }
-    protected function restoreResponse($headers, $body = null)
+    private function restoreResponse($headers, $body = null)
     {
         $status = $headers['X-Status'][0];
         unset($headers['X-Status']);
@@ -915,7 +946,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
 class Esi
 {
-    protected $contentTypes;
+    private $contentTypes;
     public function __construct(array $contentTypes = array('text/html', 'text/xml', 'application/xml'))
     {
         $this->contentTypes = $contentTypes;
@@ -1008,7 +1039,7 @@ class Esi
             }
         }
     }
-    protected function handleEsiIncludeTag($attributes)
+    private function handleEsiIncludeTag($attributes)
     {
         $options = array();
         preg_match_all('/(src|onerror|alt)="([^"]*?)"/', $attributes[1], $matches, PREG_SET_ORDER);
@@ -1090,7 +1121,7 @@ namespace Symfony\Component\HttpFoundation
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 class FileBag extends ParameterBag
 {
-    private $fileKeys = array('error', 'name', 'size', 'tmp_name', 'type');
+    static private $fileKeys = array('error', 'name', 'size', 'tmp_name', 'type');
     public function __construct(array $parameters = array())
     {
         $this->replace($parameters);
@@ -1121,35 +1152,30 @@ class FileBag extends ParameterBag
         if (is_array($file)) {
             $keys = array_keys($file);
             sort($keys);
-            if ($keys == $this->fileKeys) {
-                $file['error'] = (int) $file['error'];
-            }
-            if ($keys != $this->fileKeys) {
-                $file = array_map(array($this, 'convertFileInformation'), $file);
-            } else {
-                if ($file['error'] === UPLOAD_ERR_NO_FILE) {
+            if ($keys == self::$fileKeys) {
+                if (UPLOAD_ERR_NO_FILE == $file['error']) {
                     $file = null;
                 } else {
-                    $file = new UploadedFile($file['tmp_name'], $file['name'],
-                    $file['type'], $file['size'], $file['error']);
+                    $file = new UploadedFile($file['tmp_name'], $file['name'], $file['type'], $file['size'], $file['error']);
                 }
+            } else {
+                $file = array_map(array($this, 'convertFileInformation'), $file);
             }
         }
         return $file;
     }
     protected function fixPhpFilesArray($data)
     {
-        if (! is_array($data)) {
+        if (!is_array($data)) {
             return $data;
         }
         $keys = array_keys($data);
         sort($keys);
-        if ($this->fileKeys != $keys || ! isset($data['name']) ||
-         ! is_array($data['name'])) {
+        if (self::$fileKeys != $keys || !isset($data['name']) || !is_array($data['name'])) {
             return $data;
         }
         $files = $data;
-        foreach ($this->fileKeys as $k) {
+        foreach (self::$fileKeys as $k) {
             unset($files[$k]);
         }
         foreach (array_keys($data['name']) as $key) {
@@ -1735,6 +1761,7 @@ class Request
             return $this->languages;
         }
         $languages = $this->splitHttpAcceptHeader($this->headers->get('Accept-Language'));
+        $this->languages = array();
         foreach ($languages as $lang) {
             if (strstr($lang, '-')) {
                 $codes = explode('-', $lang);
@@ -1915,7 +1942,11 @@ class ApacheRequest extends Request
     }
     protected function prepareBaseUrl()
     {
-        return $this->server->get('SCRIPT_NAME');
+        $baseUrl = $this->server->get('SCRIPT_NAME');
+        if (false === strpos($this->server->get('REQUEST_URI'), $baseUrl)) {
+                        return rtrim(dirname($baseUrl), '/\\');
+        }
+        return $baseUrl;
     }
     protected function preparePathInfo()
     {
@@ -2382,10 +2413,10 @@ namespace Symfony\Component\ClassLoader
 {
 class UniversalClassLoader
 {
-    protected $namespaces = array();
-    protected $prefixes = array();
-    protected $namespaceFallback = array();
-    protected $prefixFallback = array();
+    private $namespaces = array();
+    private $prefixes = array();
+    private $namespaceFallback = array();
+    private $prefixFallback = array();
     public function getNamespaces()
     {
         return $this->namespaces;
@@ -2436,8 +2467,16 @@ class UniversalClassLoader
     }
     public function loadClass($class)
     {
-        $class = ltrim($class, '\\');
-        if (false !== ($pos = strrpos($class, '\\'))) {
+        if ($file = $this->findFile($class)) {
+            require $file;
+        }
+    }
+    public function findFile($class)
+    {
+        if ('\\' == $class[0]) {
+            $class = substr($class, 1);
+        }
+        if (false !== $pos = strrpos($class, '\\')) {
                         $namespace = substr($class, 0, $pos);
             foreach ($this->namespaces as $ns => $dirs) {
                 foreach ($dirs as $dir) {
@@ -2445,8 +2484,7 @@ class UniversalClassLoader
                         $className = substr($class, $pos + 1);
                         $file = $dir.DIRECTORY_SEPARATOR.str_replace('\\', DIRECTORY_SEPARATOR, $namespace).DIRECTORY_SEPARATOR.str_replace('_', DIRECTORY_SEPARATOR, $className).'.php';
                         if (file_exists($file)) {
-                            require $file;
-                            return;
+                            return $file;
                         }
                     }
                 }
@@ -2454,8 +2492,7 @@ class UniversalClassLoader
             foreach ($this->namespaceFallback as $dir) {
                 $file = $dir.DIRECTORY_SEPARATOR.str_replace('\\', DIRECTORY_SEPARATOR, $class).'.php';
                 if (file_exists($file)) {
-                    require $file;
-                    return;
+                    return $file;
                 }
             }
         } else {
@@ -2464,8 +2501,7 @@ class UniversalClassLoader
                     if (0 === strpos($class, $prefix)) {
                         $file = $dir.DIRECTORY_SEPARATOR.str_replace('_', DIRECTORY_SEPARATOR, $class).'.php';
                         if (file_exists($file)) {
-                            require $file;
-                            return;
+                            return $file;
                         }
                     }
                 }
@@ -2473,8 +2509,7 @@ class UniversalClassLoader
             foreach ($this->prefixFallback as $dir) {
                 $file = $dir.DIRECTORY_SEPARATOR.str_replace('_', DIRECTORY_SEPARATOR, $class).'.php';
                 if (file_exists($file)) {
-                    require $file;
-                    return;
+                    return $file;
                 }
             }
         }

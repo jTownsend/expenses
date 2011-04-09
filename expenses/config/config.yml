@@ -1,5 +1,6 @@
 imports:
     - { resource: parameters.ini }
+    - { resource: security.yml }
 
 framework:
     charset:       UTF-8
@@ -11,12 +12,7 @@ framework:
     validation:    { enabled: true, annotations: true }
     templating:    { engines: ['twig'] } #assets_version: SomeVersionScheme
     session:
-        storage_id:     pdo
-        db_table:       sessions
-        db_id_col:      id
-        db_data_col:    data
-        db_time_col:    last_updated
-        default_locale: en
+        default_locale: %locale%
         lifetime:       3600
         auto_start:     true
 
@@ -29,53 +25,46 @@ twig:
 assetic:
     debug:          %kernel.debug%
     use_controller: false
-
+    filters:
+        cssrewrite: ~
+        # closure:
+        #     jar: %kernel.root_dir%/java/compiler.jar
+        # yui_css:
+        #     jar: %kernel.root_dir%/java/yuicompressor-2.4.2.jar
+        
 # Doctrine Configuration
 doctrine:
     dbal:
         default_connection: default
         connections:
             default:
-                driver:   pdo_mysql
-                dbname:   funsational_%kernel.environment%
-                user:     root
-                password: root
+                driver:   %database_driver%
+                host:     %database_host%
+                dbname:   %database_name%
+                user:     %database_user%
+                password: %database_password%
 
     orm:
         auto_generate_proxy_classes: %kernel.debug%
+        default_entity_manager: default
         entity_managers:
             default:
                 mappings:
                     AcmeExpensesBundle: ~
 
-security:
-    providers:
-        # fos_userbundle:
-            # id: fos_user.user_manager
-        main:
-            users:
-                foo: { password: testing, roles: ROLE_USER }
-                admin: { password: admin, roles: ROLE_ADMIN }
-    factories:
-        FunsationalCASFactory: %kernel.root_dir%/../src/Funsational/CASBundle/Resources/config/security_factories.xml
-    firewalls:
-        profiler:
-            pattern: /_profiler/.*
-            form_login: true
-            anonymous: true
-        wdt:
-            pattern: /_wdt/.*
-            form_login: true
-            anonymous: true
-        main:
-            pattern: /.*
-            cas:
-                default_domain: sync.expensetracker.com
-            form_login:
-                use_forward: false
-                provider: main
-                use_forward: false
-            logout: true
+#doctrine_mongo_db:
+#    connections:
+#        default:
+#            server: mongodb://localhost:27017
+#            options:
+#                connect: true
+#                persist: lichess
+#    default_database: lichess_%kernel.environment%
+#    document_managers:
+#        default:
+#            mappings:
+#                AcmeExpensesBundle:
+#            metadata_cache_driver: apc
 
 # Swiftmailer Configuration
 #swiftmailer:
@@ -83,3 +72,7 @@ security:
 #    host:       %mailer_host%
 #    username:   %mailer_user%
 #    password:   %mailer_password%
+
+jms_security_extra:
+    secure_controllers:  true
+    secure_all_services: false
