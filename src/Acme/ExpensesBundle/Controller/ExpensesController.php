@@ -32,6 +32,8 @@ class ExpensesController extends Controller
      */
     public function entryAction()
     {
+        $dm = $this->get('doctrine.odm.mongodb.document_manager');
+        $dm->flush();
         $form = ListEntryForm::create($this->get('form.context'), 'entry');
 
         $form->bind($this->container->get('request'), $form);
