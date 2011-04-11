@@ -8,29 +8,29 @@
         <table>
             <tr>
                 <td>
-                    {{ form_label(form.itemName, 'Name') }}
+                    {{ form_label(form.name, 'Name') }}
                 </td>
                 <td>
-                    {{ form_field(form.itemName) }}
-                    {{ form_errors(form.itemName) }}
-                </td>
-            </tr>
-            <tr>
-                <td>
-                    {{ form_label(form.itemCost, 'Cost') }}
-                </td>
-                <td>
-                    {{ form_field(form.itemCost) }}
-                    {{ form_errors(form.itemCost) }}
+                    {{ form_field(form.name) }}
+                    {{ form_errors(form.name) }}
                 </td>
             </tr>
             <tr>
                 <td>
-                    {{ form_label(form.itemQuantity, 'Quantity') }}
+                    {{ form_label(form.price, 'Price') }}
                 </td>
                 <td>
-                    {{ form_field(form.itemQuantity) }}
-                    {{ form_errors(form.itemQuantity) }}
+                    {{ form_field(form.price) }}
+                    {{ form_errors(form.price) }}
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    {{ form_label(form.amount, 'Quantity') }}
+                </td>
+                <td>
+                    {{ form_field(form.amount) }}
+                    {{ form_errors(form.amount) }}
                 </td>
             </tr>
             <tr>

@@ -64,7 +64,7 @@ doctrine_mongo_db:
         default:
             mappings:
                 AcmeExpensesBundle:
-            metadata_cache_driver: apc
+            metadata_cache_driver: array
 
 # Swiftmailer Configuration
 #swiftmailer:

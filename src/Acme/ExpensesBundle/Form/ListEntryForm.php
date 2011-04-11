@@ -8,27 +8,10 @@ use Symfony\Component\Form\IntegerField;
 
 class ListEntryForm extends Form
 {
-    /**
-     * @validation:NotBlank
-     */
-    public $itemName;
-
-    /**
-     * @validation:NotBlank
-     * @validation:AssertType("float")
-     */
-    public $itemCost;
-
-    /**
-     * @validation:NotBlank
-     * @validation:AssertType("int")
-     */
-    public $itemQuantity;
-
     public function configure()
     {
-        $this->add(new TextField('itemName'));
-        $this->add(new TextField('itemCost'));
-        $this->add(new TextField('itemQuantity'));
+        $this->add(new TextField('name'));
+        $this->add(new TextField('price'));
+        $this->add(new TextField('amount'));
     }
 }
